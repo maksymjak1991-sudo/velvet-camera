@@ -35,6 +35,9 @@
     const e = document.querySelector('#stop');
     const a = document.querySelector('#save');
     const status = document.querySelector('#status');
+    window.addEventListener('load', () => {
+  status.textContent = 'Telegram: ' + (tg?.initData ? 'ТАК ✅' : 'НІ ❌');
+});
     let stream, rec, chunks = [], timer, savedUrl;
 
     async function camera() {
