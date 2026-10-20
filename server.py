@@ -60,6 +60,7 @@ def verify_telegram_data(init_data):
             return None
         received_hash = data.pop("hash", "") 
         data.pop("signature", None)
+      app.logger.warning("Telegram initData fields: %s", sorted(data.keys()))
         if len(received_hash) != 64:
             return None
 
