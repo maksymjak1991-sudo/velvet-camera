@@ -33,6 +33,11 @@
   length: tg?.initData?.length || 0,
   hasHash: new URLSearchParams(tg?.initData || "").has("hash")
 });
+    alert(
+  "initData: " + (tg?.initData ? "Є ✅" : "НЕМАЄ ❌") +
+  "\nДовжина: " + (tg?.initData?.length || 0) +
+  "\nHash: " + (new URLSearchParams(tg?.initData || "").has("hash") ? "Є ✅" : "НЕМАЄ ❌")
+);
     tg?.ready();
     console.log("Telegram initData available:", Boolean(tg?.initData));
     const v = document.querySelector('#preview');
