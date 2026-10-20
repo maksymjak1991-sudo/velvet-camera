@@ -1,1 +1,106 @@
-<!doctype html><html lang="uk"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>VELVET • Camera</title><script src="https://telegram.org/js/telegram-web-app.js"></script><style>body{margin:0;background:#100d16;color:#f5edf6;font-family:system-ui;text-align:center}h1{letter-spacing:.35em;margin:28px 0 5px}p{color:#c4b6cb}video{width:min(88vw,430px);aspect-ratio:1;object-fit:cover;border-radius:50%;background:#241a2d;margin:24px auto;display:block;transform:scaleX(-1)}button{background:#d8b4d2;color:#24142a;border:0;border-radius:30px;padding:16px 22px;font-size:16px;margin:5px}button:disabled{opacity:.4}small{display:block;margin:14px 24px;color:#c4b6cb}</style></head><body><h1>VELVET</h1><p>Your beauty. Your moment.</p><video id="preview" autoplay playsinline muted></video><div><button id="start">⭕ Записати</button><button id="stop" disabled>■ Зупинити</button></div><a id="save" style="display:none;color:#e7c9e0" download="velvet-circle.webm">⬇ Зберегти відео</a><small id="status">Дозволь доступ до камери та мікрофона. Демоверсія: запис зберігається на пристрій, передача боту буде наступним етапом.</small><script>const tg=window.Telegram?.WebApp;tg?.ready();const v=document.querySelector('#preview'),s=document.querySelector('#start'),e=document.querySelector('#stop'),a=document.querySelector('#save'),status=document.querySelector('#status');let stream,rec,chunks=[],timer;async function camera(){stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:720,height:720},audio:true});v.srcObject=stream} s.onclick=async()=>{try{if(!stream)await camera();chunks=[];const type=['video/mp4','video/webm;codecs=vp9,opus','video/webm'].find(t=>MediaRecorder.isTypeSupported(t));rec=new MediaRecorder(stream,type?{mimeType:type}:undefined);rec.ondataavailable=x=>{if(x.data.size)chunks.push(x.data)};rec.onstop=()=>{const blob=new Blob(chunks,{type:rec.mimeType});a.href=URL.createObjectURL(blob);a.download=rec.mimeType.includes('mp4')?'velvet-video.mp4':'velvet-video.webm';a.style.display='block';status.textContent='Запис готовий. Поки що його можна зберегти на пристрій.'};rec.start();s.disabled=true;e.disabled=false;a.style.display='none';status.textContent='● Запис… до 60 секунд';timer=setTimeout(()=>e.click(),60000)}catch(err){status.textContent='Не вдалося відкрити камеру: '+err.message}};e.onclick=()=>{if(rec?.state==='recording')rec.stop();clearTimeout(timer);s.disabled=false;e.disabled=true};window.addEventListener('pagehide',()=>stream?.getTracks().forEach(t=>t.stop()));</script></body></html>
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>VELVET • Camera</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body{margin:0;background:#100d16;color:#f5edf6;font-family:system-ui;text-align:center}
+    h1{letter-spacing:.35em;margin:28px 0 5px}
+    p{color:#c4b6cb}
+    video{width:min(88vw,430px);aspect-ratio:1;object-fit:cover;border-radius:50%;background:#241a2d;margin:24px auto;display:block;transform:scaleX(-1)}
+    button{background:#d8b4d2;color:#24142a;border:0;border-radius:30px;padding:16px 22px;font-size:16px;margin:5px}
+    button:disabled{opacity:.4}
+    small{display:block;margin:14px 24px;color:#c4b6cb}
+  </style>
+</head>
+<body>
+  <h1>VELVET</h1>
+  <p>Your beauty. Your moment.</p>
+  <video id="preview" autoplay playsinline muted></video>
+  <div>
+    <button id="start">⭕️ Записати</button>
+    <button id="stop" disabled>■ Зупинити</button>
+  </div>
+  <a id="save" style="display:none;color:#e7c9e0" download="velvet-video.webm">⬇️ Зберегти відео</a>
+  <small id="status">Дозволь доступ до камери та мікрофона. Відкрий камеру через бота Velvet у Telegram, щоб надіслати кружечок.</small>
+  <script>
+    const API_URL = 'https://velvet-camera.onrender.com/upload';
+    const tg = window.Telegram?.WebApp;
+    tg?.ready();
+    const v = document.querySelector('#preview');
+    const s = document.querySelector('#start');
+    const e = document.querySelector('#stop');
+    const a = document.querySelector('#save');
+    const status = document.querySelector('#status');
+    let stream, rec, chunks = [], timer, savedUrl;
+
+    async function camera() {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {facingMode:'user',width:720,height:720},
+        audio: true
+      });
+      v.srcObject = stream;
+    }
+
+    async function sendToTelegram(blob, mimeType) {
+      if (!tg?.initData) {
+        status.textContent = 'Запис готовий. Для надсилання відкрий Velvet через кнопку бота в Telegram. Зараз відео можна зберегти.';
+        return;
+      }
+      status.textContent = '⏳ Надсилаємо кружечок у Telegram… Це може зайняти до хвилини.';
+      const form = new FormData();
+      form.append('init_data', tg.initData);
+      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+      form.append('video', blob, 'velvet-video.' + ext);
+      try {
+        const response = await fetch(API_URL, {method:'POST', body:form});
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Помилка сервера: ' + response.status);
+        status.textContent = '✅ Кружечок надіслано! Перевір чат із ботом Velvet.';
+      } catch (err) {
+        status.textContent = 'Не вдалося надіслати: ' + err.message + '. Відео можна зберегти нижче.';
+      }
+    }
+
+    s.onclick = async () => {
+      try {
+        if (!stream) await camera();
+        chunks = [];
+        const type = ['video/mp4','video/webm;codecs=vp9,opus','video/webm'].find(t => MediaRecorder.isTypeSupported(t));
+        rec = new MediaRecorder(stream, type ? {mimeType:type} : undefined);
+        rec.ondataavailable = x => { if (x.data.size) chunks.push(x.data); };
+        rec.onstop = async () => {
+          const mimeType = rec.mimeType || 'video/webm';
+          const blob = new Blob(chunks, {type:mimeType});
+          if (savedUrl) URL.revokeObjectURL(savedUrl);
+          savedUrl = URL.createObjectURL(blob);
+          a.href = savedUrl;
+          a.download = mimeType.includes('mp4') ? 'velvet-video.mp4' : 'velvet-video.webm';
+          a.style.display = 'block';
+          s.disabled = true;
+          await sendToTelegram(blob, mimeType);
+          s.disabled = false;
+        };
+        rec.start();
+        s.disabled = true;
+        e.disabled = false;
+        a.style.display = 'none';
+        status.textContent = '● Запис… до 60 секунд';
+        timer = setTimeout(() => e.click(), 60000);
+      } catch (err) {
+        status.textContent = 'Не вдалося відкрити камеру: ' + err.message;
+        s.disabled = false;
+      }
+    };
+
+    e.onclick = () => {
+      if (rec?.state === 'recording') rec.stop();
+      clearTimeout(timer);
+      e.disabled = true;
+    };
+    window.addEventListener('pagehide', () => stream?.getTracks().forEach(t => t.stop()));
+  </script>
+</body>
+</html>
