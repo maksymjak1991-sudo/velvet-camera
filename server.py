@@ -66,12 +66,14 @@ def verify_telegram_data(init_data):
         secret_key = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
         expected_hash = hmac.new(secret_key, check_string.encode(), hashlib.sha256).hexdigest()
         if not hmac.compare_digest(expected_hash, received_hash):
+            app.logger.warning("Telegram authentication failed: hash mismatch")
+
             return None
 
         auth_date = int(data["auth_date"])
         now = int(time.time())
         if auth_date > now + 60 or now - auth_date > MAX_AGE_SECONDS:
-            return None
+            return None 
 
         user = json.loads(data["user"])
         user_id = int(user["id"])
