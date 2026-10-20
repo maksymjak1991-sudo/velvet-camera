@@ -29,6 +29,7 @@
     const API_URL = 'https://velvet-camera.onrender.com/upload';
     const tg = window.Telegram?.WebApp;
     tg?.ready();
+    console.log("Telegram initData available:", Boolean(tg?.initData));
     const v = document.querySelector('#preview');
     const s = document.querySelector('#start');
     const e = document.querySelector('#stop');
