@@ -58,11 +58,12 @@ def verify_telegram_data(init_data):
         data = dict(pairs)
         if len(pairs) != len(data):
             return None
-        received_hash = data.pop("hash", "") 
+        received_hash = data.pop("hash", "")
         data.pop("signature", None)
-      app.logger.warning("Telegram initData fields: %s", sorted(data.keys()))
+        app.logger.warning("Telegram initData fields: %s", sorted(data.keys()))
         if len(received_hash) != 64:
             return None
+
 
         check_string = "\n".join(f"{key}={value}" for key, value in sorted(data.items()))
         secret_key = hmac.new(b"WebAppData", BOT_TOKEN.encode(), hashlib.sha256).digest()
