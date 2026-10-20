@@ -26,6 +26,7 @@ app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 20 * 1024 * 1024
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "").strip()
+app.logger.warning("Token fingerprint: %s", hashlib.sha256(BOT_TOKEN.encode()).hexdigest()[:12])
 MINIAPP_ORIGIN = os.environ.get("MINIAPP_ORIGIN", "").rstrip("/")
 MAX_AGE_SECONDS = 60 * 60
 
