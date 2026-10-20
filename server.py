@@ -57,7 +57,8 @@ def verify_telegram_data(init_data):
         data = dict(pairs)
         if len(pairs) != len(data):
             return None
-        received_hash = data.pop("hash", "")
+        received_hash = data.pop("hash", "") 
+        data.pop("signature", None)
         if len(received_hash) != 64:
             return None
 
