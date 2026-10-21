@@ -1,120 +1,191 @@
 <!doctype html>
 <html lang="uk">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>VELVET • Camera</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body{margin:0;background:#100d16;color:#f5edf6;font-family:system-ui;text-align:center}
-    h1{letter-spacing:.35em;margin:28px 0 5px}
-    p{color:#c4b6cb}
-    video{width:min(88vw,430px);aspect-ratio:1;object-fit:cover;border-radius:50%;background:#241a2d;margin:24px auto;display:block;transform:scaleX(-1)}
-    button{background:#d8b4d2;color:#24142a;border:0;border-radius:30px;padding:16px 22px;font-size:16px;margin:5px}
-    button:disabled{opacity:.4}
-    small{display:block;margin:14px 24px;color:#c4b6cb}
-  </style>
-</head>
-<body>
-  <h1>VELVET</h1>
-  <p>Your beauty. Your moment.</p>
-  <video id="preview" autoplay playsinline muted></video>
-  <div>
-    <button id="start">⭕️ Записати</button>
-    <button id="stop" disabled>■ Зупинити</button>
-  </div>
-  <a id="save" style="display:none;color:#e7c9e0" download="velvet-video.webm">⬇️ Зберегти відео</a>
-  <small id="status">Дозволь доступ до камери та мікрофона. Відкрий камеру через бота Velvet у Telegram, щоб надіслати кружечок.</small>
-  <script>
-    const API_URL = 'https://velvet-camera.onrender.com/upload';
-    const tg = window.Telegram?.WebApp;
-    console.log("Telegram initData:", {
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>VELVET • Camera</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="./upload.js"></script>
+    <style>
+      body {
+        margin: 0;
+        background: #100d16;
+        color: #f5edf6;
+        font-family: system-ui;
+        text-align: center;
+      }
+
+      h1 {
+        letter-spacing: 0.35em;
+        margin: 28px 0 5px;
+      }
+
+      p {
+        color: #c4b6cb;
+      }
+
+      video {
+        width: min(88vw, 430px);
+        aspect-ratio: 1;
+        object-fit: cover;
+        border-radius: 50%;
+        background: #241a2d;
+        margin: 24px auto;
+        display: block;
+        transform: scaleX(-1);
+      }
+
+      button {
+        background: #d8b4d2;
+        color: #24142a;
+        border: 0;
+        border-radius: 30px;
+        padding: 16px 22px;
+        font-size: 16px;
+        margin: 5px;
+      }
+
+      button:disabled {
+        opacity: 0.4;
+      }
+
+      small {
+        display: block;
+        margin: 14px 24px;
+        color: #c4b6cb;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1>VELVET</h1>
+    <p>Your beauty. Your moment.</p>
+    <video id="preview" autoplay playsinline muted></video>
+    <div>
+      <button id="start">⭕ Записати</button
+      ><button id="stop" disabled>■ Зупинити</button><button id="send" disabled>✉ Надіслати в Telegram</button>
+    </div>
+    <a
+      id="save"
+      style="display: none; color: #e7c9e0"
+      download="velvet-circle.webm"
+      >⬇ Зберегти відео</a
+    ><small id="status"
+      >Дозволь доступ до камери та мікрофона.</small
+    >
+    <script>
+      const tg = window.Telegram?.WebApp;
+      console.log("Telegram initData:", {
   exists: Boolean(tg?.initData),
   length: tg?.initData?.length || 0,
   hasHash: new URLSearchParams(tg?.initData || "").has("hash")
 });
-    alert(
-  "initData: " + (tg?.initData ? "Є ✅" : "НЕМАЄ ❌") +
-  "\nДовжина: " + (tg?.initData?.length || 0) +
-  "\nHash: " + (new URLSearchParams(tg?.initData || "").has("hash") ? "Є ✅" : "НЕМАЄ ❌")
-);
-    tg?.ready();
-    console.log("Telegram initData available:", Boolean(tg?.initData));
-    const v = document.querySelector('#preview');
-    const s = document.querySelector('#start');
-    const e = document.querySelector('#stop');
-    const a = document.querySelector('#save');
-    const status = document.querySelector('#status');
-    window.addEventListener('load', () => {
-  status.textContent = 'Telegram: ' + (tg?.initData ? 'ТАК ✅' : 'НІ ❌');
-});
-    let stream, rec, chunks = [], timer, savedUrl;
-
-    async function camera() {
-      stream = await navigator.mediaDevices.getUserMedia({
-        video: {facingMode:'user',width:720,height:720},
-        audio: true
-      });
-      v.srcObject = stream;
-    }
-
-    async function sendToTelegram(blob, mimeType) {
-      if (!tg?.initData) {
-        status.textContent = 'Запис готовий. Для надсилання відкрий Velvet через кнопку бота в Telegram. Зараз відео можна зберегти.';
-        return;
+      tg?.ready();
+      const v = document.querySelector("#preview"),
+        s = document.querySelector("#start"),
+        e = document.querySelector("#stop"),
+        a = document.querySelector("#save"),
+        send = document.querySelector("#send"),
+        status = document.querySelector("#status");
+      let stream,
+        rec,
+        chunks = [],
+        timer,
+        recordedBlob;
+      async function camera() {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: 720, height: 720 },
+          audio: true,
+        });
+        v.srcObject = stream;
       }
-      status.textContent = '⏳ Надсилаємо кружечок у Telegram… Це може зайняти до хвилини.';
-      const form = new FormData();
-      form.append('init_data', tg.initData);
-      const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-      form.append('video', blob, 'velvet-video.' + ext);
-      try {
-        const response = await fetch(API_URL, {method:'POST', body:form});
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || 'Помилка сервера: ' + response.status);
-        status.textContent = '✅ Кружечок надіслано! Перевір чат із ботом Velvet.';
-      } catch (err) {
-        status.textContent = 'Не вдалося надіслати: ' + err.message + '. Відео можна зберегти нижче.';
-      }
-    }
-
-    s.onclick = async () => {
-      try {
-        if (!stream) await camera();
-        chunks = [];
-        const type = ['video/mp4','video/webm;codecs=vp9,opus','video/webm'].find(t => MediaRecorder.isTypeSupported(t));
-        rec = new MediaRecorder(stream, type ? {mimeType:type} : undefined);
-        rec.ondataavailable = x => { if (x.data.size) chunks.push(x.data); };
-        rec.onstop = async () => {
-          const mimeType = rec.mimeType || 'video/webm';
-          const blob = new Blob(chunks, {type:mimeType});
-          if (savedUrl) URL.revokeObjectURL(savedUrl);
-          savedUrl = URL.createObjectURL(blob);
-          a.href = savedUrl;
-          a.download = mimeType.includes('mp4') ? 'velvet-video.mp4' : 'velvet-video.webm';
-          a.style.display = 'block';
+      s.onclick = async () => {
+        try {
+          if (!stream) await camera();
+          chunks = [];
+          recordedBlob = null;
+          send.disabled = true;
+          const type = [
+            "video/mp4",
+            "video/webm;codecs=vp9,opus",
+            "video/webm",
+          ].find((t) => MediaRecorder.isTypeSupported(t));
+          rec = new MediaRecorder(
+            stream,
+            type ? { mimeType: type } : undefined,
+          );
+          rec.ondataavailable = (x) => {
+            if (x.data.size) chunks.push(x.data);
+          };
+          rec.onstop = () => {
+            const blob = new Blob(chunks, { type: rec.mimeType });
+            recordedBlob = blob;
+            send.disabled = false;
+            a.href = URL.createObjectURL(blob);
+            a.download = rec.mimeType.includes("mp4")
+              ? "velvet-video.mp4"
+              : "velvet-video.webm";
+            a.style.display = "block";
+            status.textContent =
+              "Запис готовий. Натисни «Надіслати в Telegram».";
+          };
+          rec.start();
           s.disabled = true;
-          await sendToTelegram(blob, mimeType);
-          s.disabled = false;
-        };
-        rec.start();
-        s.disabled = true;
-        e.disabled = false;
-        a.style.display = 'none';
-        status.textContent = '● Запис… до 60 секунд';
-        timer = setTimeout(() => e.click(), 60000);
-      } catch (err) {
-        status.textContent = 'Не вдалося відкрити камеру: ' + err.message;
+          e.disabled = false;
+          a.style.display = "none";
+          status.textContent = "● Запис… до 60 секунд";
+          timer = setTimeout(() => e.click(), 60000);
+        } catch (err) {
+          status.textContent = "Не вдалося відкрити камеру: " + err.message;
+        }
+      };
+      e.onclick = () => {
+        if (rec?.state === "recording") rec.stop();
+        clearTimeout(timer);
         s.disabled = false;
-      }
-    };
-
-    e.onclick = () => {
-      if (rec?.state === 'recording') rec.stop();
-      clearTimeout(timer);
-      e.disabled = true;
-    };
-    window.addEventListener('pagehide', () => stream?.getTracks().forEach(t => t.stop()));
-  </script>
-</body>
+        e.disabled = true;
+      };
+      send.onclick = async () => {
+        const server = (window.VELVET_SERVER_URL || "").replace(/\/$/, "");
+        if (!server.startsWith("https://")) {
+          status.textContent = "Спочатку вкажи HTTPS-адресу Render у файлі upload.js.";
+          return;
+        }
+        if (!tg?.initData) {
+          status.textContent = "Відкрий камеру через кнопку бота в Telegram.";
+          return;
+        }
+        if (!recordedBlob) return;
+        if (recordedBlob.size > 20 * 1024 * 1024) {
+          status.textContent = "Відео більше 20 МБ. Запиши коротше.";
+          return;
+        }
+        send.disabled = true;
+        s.disabled = true;
+        status.textContent = "Надсилаю відео…";
+        try {
+          const form = new FormData();
+          form.append("init_data", tg.initData);
+          form.append("video", recordedBlob,
+            recordedBlob.type.includes("mp4") ? "velvet.mp4" : "velvet.webm");
+          const response = await fetch(server + "/upload", {method: "POST", body: form});
+          const result = await response.json().catch(() => ({}));
+          if (!response.ok || !result.ok) throw new Error(result.error || "HTTP " + response.status);
+          status.textContent = "Готово! Кружечок надіслано в чат із ботом ♡";
+          tg?.HapticFeedback?.notificationOccurred("success");
+        } catch (err) {
+          status.textContent = "Не вдалося надіслати: " + err.message;
+        } finally {
+          send.disabled = false;
+          s.disabled = false;
+        }
+      };
+      window.addEventListener("pagehide", () =>
+        stream?.getTracks().forEach((t) => t.stop()),
+      );
+    </script>
+  </body>
 </html>
