@@ -99,8 +99,7 @@ def upload():
         return jsonify(error="Server is not configured"), 503
 
     user_id = verify_telegram_data(request.form.get("init_data", ""))
-  if user_id is None:
-    app.logger.warning("Velvet test: Telegram authentication failed")
+ 
     if user_id is None:
         return jsonify(error="Open Velvet from Telegram and try again"), 401
 
